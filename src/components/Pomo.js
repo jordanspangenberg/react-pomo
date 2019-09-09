@@ -2,12 +2,9 @@ import React, { Component } from "react";
 import {
   FaArrowUp,
   FaArrowDown,
-  FaPlay,
-  FaPause,
-  FaUndo
 } from "react-icons/fa";
 import Countdown, { zeroPad } from "react-countdown-now";
-import PropTypes from "prop-types";
+import Clock from '../components/Clock'
 
 const renderer = ({ minutes, seconds }) => {
   return (
@@ -17,25 +14,6 @@ const renderer = ({ minutes, seconds }) => {
   );
 };
 
-const rendererWithMessage = ({ minutes, seconds, completed, session }) => {
-  if (completed) {
-    // Render a complete state
-    return (
-      <div>
-        {session
-          ? "Session finished, begin break"
-          : "Break over, next session begins"}
-      </div>
-    );
-  } else {
-    // Render a countdown
-    return (
-      <span>
-        {minutes}:{zeroPad(seconds)}
-      </span>
-    );
-  }
-};
 
 function TimerControl({ time, label, session, onHandleTime }) {
   return (
@@ -70,12 +48,6 @@ function Timer({ time, session, handlePause, handleReset }) {
         renderer={renderer}
         autoStart={false}
       />
-{/*       {!session ? (
-        <FaPlay id="start_stop" onClick={() => this.handlePause()} />
-      ) : (
-        <FaPause id="start_stop" />
-      )}
-      <FaUndo id="reset" /> */}
     </div>
   );
 }
@@ -88,12 +60,13 @@ function Timer({ time, session, handlePause, handleReset }) {
 
 export default class Pomo extends Component {
   state = {
-    defaultSession: 1500,
-    defaultBreak: 300,
-    currentSession: 1500,
-    currentBreak: 300,
-    timeLeft: 1500,
-    session: false
+    defaultSession: 25 * 60,
+    defaultBreak: 5 * 60,
+    currentSession: 25 * 60,
+    currentBreak: 5 * 60,
+    timeLeft: 25 * 60,
+    session: true,
+    running: false,
   };
 
   handleTime = (id, plus) => {
@@ -113,13 +86,25 @@ export default class Pomo extends Component {
     });
   };
 
-  handlePause = () => {
+  handlePause = (myRef, running) => {
+    //console.log('myref', myRef)
+    console.log(this.state)
+    myRef.current.isPaused() ? myRef.current.start() : myRef.current.pause()
     this.setState({
-      session: !this.state.session
-    });
+      running: !running
+    })
   };
 
-  handleReset = () => {};
+  handleReset = (myRef) => {
+    myRef.current.pause()
+    this.setState({
+      currentSession: this.state.defaultSession,
+      currentBreak: this.state.defaultBreak, 
+      timeLeft: this.state.defaultSession,
+      running: false
+    })
+
+  };
 
   render() {
     const { currentSession, currentBreak, timeLeft } = this.state;
@@ -139,17 +124,18 @@ export default class Pomo extends Component {
           {this.state.session === true ? "Session" : "Break"}
         </div>
         <div className="timer">
-          <Countdown
-            date={
+          <Clock
+            time={
               Date.now() +
               (this.state.session === true
                 ? this.state.currentSession
                 : this.state.currentBreak) *
                 1000
             }
-            renderer={rendererWithMessage}
-            autoStart={false}
             session={this.state.session}
+            handlePause={this.handlePause}
+            handleReset={this.handleReset}
+            running={this.state.running}
           />
         </div>
       </div>
